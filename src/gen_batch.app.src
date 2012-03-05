@@ -1,0 +1,13 @@
+%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ts=4 sw=4 ft=erlang et
+
+{application, gen_batch,
+ [{description, "Generic batch processing library"},
+  {vsn, git},
+  {modules, []},
+  {registered, []},
+  {applications, [ kernel, stdlib ]},
+  {mod, {gen_batch_app, []}},
+  {start_phases, []},
+  {env, []}
+ ]}.
