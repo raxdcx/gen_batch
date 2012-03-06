@@ -2,7 +2,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_worker/2, active_workers/0]).
+-export([start_link/0, start_worker/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -16,10 +16,6 @@ start_link() ->
 
 start_worker(Runner, Callback) ->
     supervisor:start_child(?MODULE, [Runner, Callback]).
-
-active_workers() ->
-    Props = supervisor:count_children(?MODULE),
-    proplists:get_value(active, Props).
 
 %% ===================================================================
 %% Supervisor callbacks
