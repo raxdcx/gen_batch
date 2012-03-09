@@ -72,8 +72,8 @@ ready({run_job, Args}, From, #state{ callback = Callback } = S) ->
                                            items = queue:from_list(Items),
                                            job_state = JobState }};
 
-        {error, _Reason} = E ->
-            reply(From, E),
+        {stop, Reason} ->
+            reply(From, {error, Reason}),
             {stop, normal, S}
     end.
 

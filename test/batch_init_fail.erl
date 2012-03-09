@@ -4,7 +4,7 @@
 -export([init/1, process_item/3, worker_died/5, job_stopping/1, job_complete/2]).
 
 init([]) ->
-    {error, testing}.
+    {stop, testing}.
 
 process_item(_, _StartTime, []) ->
     ok.
