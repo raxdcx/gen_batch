@@ -14,28 +14,32 @@
 %% State callbacks
 -export([ready/2, ready/3, running/2, complete/2]).
 
--record(state, { callback    :: atom(), % module
-                 num_workers :: integer(),
+-record(state, { callback    :: module(), % module
+                 num_workers :: non_neg_integer(),
                  items       :: term(), % queue
                  active      :: term(), % orddict
                  from        :: pid() | undefined,
                  reason      :: undefined | stopped | complete,
-                 job_state   :: term() }). % defined by callback module
+                 job_state   :: gen_batch:job_state() }). % defined by callback module
 
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+-spec start_link(module()) -> {ok, pid()} | {error, term()}.
 start_link(Callback) ->
     gen_fsm:start_link(?MODULE, [Callback], []).
 
+-spec run_job(pid(), [term()]) -> ok.
 run_job(Pid, Args) ->
     gen_fsm:send_event(Pid, {run_job, Args}).
 
+-spec sync_run_job(pid(), [term()]) -> ok | {error, term()}.
 sync_run_job(Pid, Args) ->
     gen_fsm:sync_send_event(Pid, {run_job, Args}, infinity).
 
+-spec stop(pid()) -> ok.
 stop(Pid) ->
     gen_fsm:send_all_state_event(Pid, stop).
 
@@ -44,9 +48,11 @@ stop(Pid) ->
 %%% Worker callback
 %%%===================================================================
 
+-spec worker_ready(pid(), pid()) -> ok.
 worker_ready(Pid, WorkerPid) ->
     worker_ready(Pid, WorkerPid, ok).
 
+-spec worker_ready(pid(), pid(), ok | stop) -> ok.
 worker_ready(Pid, WorkerPid, Continue) ->
     gen_fsm:send_event(Pid, {worker_ready, WorkerPid, Continue}).
 

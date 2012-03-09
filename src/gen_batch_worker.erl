@@ -8,18 +8,21 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--record(state, {runner, callback}).
+-record(state, {runner :: pid(), callback :: module()}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+-spec start_link(pid(), module()) -> {ok, pid()} | {error, term()}.
 start_link(Runner, Callback) ->
     gen_server:start_link(?MODULE, {Runner, Callback}, []).
 
+-spec process(pid(), term(), term(), term()) -> ok.
 process(Pid, Item, StartTime, JobState) ->
     gen_server:cast(Pid, {process, Item, StartTime, JobState}).
 
+-spec stop(pid()) -> ok.
 stop(Pid) ->
     %% Don't raise a noproc error if the worker has already died
     case is_process_alive(Pid) of
