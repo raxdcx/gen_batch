@@ -31,11 +31,11 @@
 start_link(Callback) ->
     gen_fsm:start_link(?MODULE, [Callback], []).
 
--spec run_job(pid(), [term()]) -> ok.
+-spec run_job(pid(), any()) -> ok.
 run_job(Pid, Args) ->
     gen_fsm:send_event(Pid, {run_job, Args}).
 
--spec sync_run_job(pid(), [term()]) -> ok | {error, term()}.
+-spec sync_run_job(pid(), any()) -> ok | {error, term()}.
 sync_run_job(Pid, Args) ->
     gen_fsm:sync_send_event(Pid, {run_job, Args}, infinity).
 

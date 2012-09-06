@@ -41,12 +41,12 @@ behaviour_info(callbacks) -> [
 
 -endif.
 
--spec run_job(module(), [term()]) -> ok.
+-spec run_job(module(), any()) -> ok.
 run_job(Callback, Args) ->
     {ok, Pid} = supervisor:start_child(gen_batch_runner_sup, [Callback]),
     gen_batch_runner:run_job(Pid, Args).
 
--spec sync_run_job(module(), [term()]) -> ok | {error, term()}.
+-spec sync_run_job(module(), any()) -> ok | {error, term()}.
 sync_run_job(Callback, Args) ->
     {ok, Pid} = supervisor:start_child(gen_batch_runner_sup, [Callback]),
     gen_batch_runner:sync_run_job(Pid, Args).
