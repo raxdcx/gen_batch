@@ -7,6 +7,8 @@
 -type job_state() :: term().
 -export_types([item/0, items/0, job_state/0]).
 
+-ifndef(no_callbacks).
+
 -callback init(Args :: term()) ->
     {ok, NumWorkers :: non_neg_integer(), Items :: items(), JobState :: job_state()} |
     {stop, Reason :: term()}.
@@ -26,14 +28,18 @@
 -callback job_complete(Reason :: stopped | complete,
                        JobState :: job_state()) -> no_return().
 
-%% -export([behaviour_info/1]).
-%% behaviour_info(callbacks) -> [
-%%     {init, 1},
-%%     {process_item, 3},
-%%     {worker_died, 5},
-%%     {job_stopping, 1},
-%%     {job_complete, 2}
-%% ].
+-else.
+
+-export([behaviour_info/1]).
+behaviour_info(callbacks) -> [
+    {init, 1},
+    {process_item, 3},
+    {worker_died, 5},
+    {job_stopping, 1},
+    {job_complete, 2}
+].
+
+-endif.
 
 -spec run_job(module(), [term()]) -> ok.
 run_job(Callback, Args) ->
