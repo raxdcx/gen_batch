@@ -14,3 +14,5 @@ analyze: compile app.plt
 
 app.plt:
 	dialyzer --build_plt --apps erts stdlib kernel --output_plt app.plt
+
+jenkins: clean compile unit analyze
