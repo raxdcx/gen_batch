@@ -2,12 +2,13 @@
 
 -export([run_job/2, sync_run_job/2]).
 
--type item() :: term().
--type items() :: [item()].
--type job_state() :: term().
--export_types([item/0, items/0, job_state/0]).
-
 -ifndef(no_callbacks).
+
+-type item()      :: term().
+-type items()     :: [item()].
+-type job_state() :: term().
+
+-export_types([item/0, items/0, job_state/0]).
 
 -callback init(Args :: term()) ->
     {ok, NumWorkers :: non_neg_integer(), Items :: items(), JobState :: job_state()} |
