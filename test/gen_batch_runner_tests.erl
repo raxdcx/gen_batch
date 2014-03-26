@@ -34,5 +34,13 @@ job_runner_test_() ->
        )},
 
       {"The runner should continue when worker supervisor dies",
-       ?_assertMatch(ok, gen_batch:sync_run_job(batch_kill_sup, []))}
+       ?_assertMatch(ok, gen_batch:sync_run_job(batch_kill_sup, []))},
+
+       {"The workers should be able to return results that are aggregated and replied back on synchronous calls",
+         ?_test(
+           begin
+             {results, Results} = gen_batch:sync_run_job(batch_worker_results, []),
+             ?_assertMatch([1, 2, 3], lists:sort(Results))
+           end
+         )}
      ]}.

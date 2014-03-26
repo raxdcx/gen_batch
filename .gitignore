@@ -2,3 +2,5 @@
 ebin
 app.plt
 *.sublime-*
+.idea/
+*.iml

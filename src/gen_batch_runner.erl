@@ -20,7 +20,8 @@
                  active      :: term(), % orddict
                  from        :: pid() | undefined,
                  reason      :: undefined | stopped | complete,
-                 job_state   :: gen_batch:job_state() }). % defined by callback module
+                 job_state   :: gen_batch:job_state(),
+                 results     :: list()}). % defined by callback module
 
 
 %%%===================================================================
@@ -64,7 +65,8 @@ worker_ready(Pid, WorkerPid, Continue) ->
 init([Callback]) ->
     error_logger:info_msg("Job runner ~p (~p) starting up...~n", [Callback, self()]),
     {ok, ready, #state{ callback = Callback,
-                        active = orddict:new() }}.
+                        active = orddict:new(),
+                        results = []}}.
 
 ready({run_job, Args}, S) ->
     ready({run_job, Args}, undefined, S).
@@ -96,11 +98,29 @@ running({worker_ready, WorkerPid, ok}, #state{items = Items, job_state = JobStat
             {next_state, running, S#state{ items = I2, active = Active }}
     end;
 
+running({worker_ready, WorkerPid, {result, Result}},
+    #state{items = Items, job_state = JobState, results = Results} = S) ->
+    case queue:out(Items) of
+        {empty, I2} ->
+            Active = stop_worker(WorkerPid, S),
+            wind_down(S#state{ items = I2, active = Active, reason = complete, results = [Result | Results]});
+
+        {{value, Item}, I2} ->
+            StartTime = now(),
+            gen_batch_worker:process(WorkerPid, Item, StartTime, JobState),
+            Active = orddict:store(WorkerPid, {Item, StartTime}, S#state.active),
+            {next_state, running, S#state{ items = I2, active = Active, results = [Result | Results]}}
+    end;
+
 running({worker_ready, WorkerPid, stop}, #state{callback = Callback, job_state = JobState} = S) ->
     Active = stop_worker(WorkerPid, S),
     spawn(Callback, job_stopping, [JobState]),
     error_logger:info_msg("Job runner ~p (~p) shutting down...~n", [Callback, self()]),
     wind_down(S#state{ items = queue:new(), active = Active, reason = stopped }).
+
+complete({worker_ready, WorkerPid, {result, Result}}, #state{results = Results} = S) ->
+    Active = stop_worker(WorkerPid, S),
+    wind_down(S#state{ active = Active, results = [Result | Results]});
 
 complete({worker_ready, WorkerPid, _}, S) ->
     Active = stop_worker(WorkerPid, S),
@@ -181,12 +201,17 @@ reply(From, Reply) ->
         From -> gen_fsm:reply(From, Reply)
     end.
 
-wind_down(#state{ callback = Callback, reason = Reason } = S) ->
+wind_down(#state{ callback = Callback, reason = Reason, results = Results } = S) ->
     case orddict:size(S#state.active) of
         0 ->
             error_logger:info_msg("Job ~p (~p) ~p.~n", [Callback, self(), Reason]),
             spawn(Callback, job_complete, [Reason, S#state.job_state]),
-            reply(S#state.from, ok),
+          case length(Results) of
+            0 ->
+              reply(S#state.from, ok);
+            _ ->
+              reply(S#state.from, {results, Results})
+          end,
             {stop, normal, S};
 
         _ ->
