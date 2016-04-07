@@ -92,7 +92,7 @@ running({worker_ready, WorkerPid, ok}, #state{items = Items, job_state = JobStat
             wind_down(S#state{ items = I2, active = Active, reason = complete });
 
         {{value, Item}, I2} ->
-            StartTime = now(),
+            StartTime = os:timestamp(),
             gen_batch_worker:process(WorkerPid, Item, StartTime, JobState),
             Active = orddict:store(WorkerPid, {Item, StartTime}, S#state.active),
             {next_state, running, S#state{ items = I2, active = Active }}
@@ -106,7 +106,7 @@ running({worker_ready, WorkerPid, {result, Result}},
             wind_down(S#state{ items = I2, active = Active, reason = complete, results = [Result | Results]});
 
         {{value, Item}, I2} ->
-            StartTime = now(),
+            StartTime = os:timestamp(),
             gen_batch_worker:process(WorkerPid, Item, StartTime, JobState),
             Active = orddict:store(WorkerPid, {Item, StartTime}, S#state.active),
             {next_state, running, S#state{ items = I2, active = Active, results = [Result | Results]}}
