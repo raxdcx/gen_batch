@@ -92,7 +92,7 @@ running({worker_ready, WorkerPid, ok}, #state{items = Items, job_state = JobStat
             wind_down(S#state{ items = I2, active = Active, reason = complete });
 
         {{value, Item}, I2} ->
-            StartTime = now(),
+            StartTime = os:timestamp(),
             gen_batch_worker:process(WorkerPid, Item, StartTime, JobState),
             Active = orddict:store(WorkerPid, {Item, StartTime}, S#state.active),
             {next_state, running, S#state{ items = I2, active = Active }}
@@ -106,7 +106,7 @@ running({worker_ready, WorkerPid, {result, Result}},
             wind_down(S#state{ items = I2, active = Active, reason = complete, results = [Result | Results]});
 
         {{value, Item}, I2} ->
-            StartTime = now(),
+            StartTime = os:timestamp(),
             gen_batch_worker:process(WorkerPid, Item, StartTime, JobState),
             Active = orddict:store(WorkerPid, {Item, StartTime}, S#state.active),
             {next_state, running, S#state{ items = I2, active = Active, results = [Result | Results]}}
@@ -132,47 +132,47 @@ handle_info({'DOWN', _, process, _Pid, normal}, StateName, S) ->
     {next_state, StateName, S};
 
 handle_info({'DOWN', _, process, WorkerPid, shutdown}, _StateName, S) ->
-    %% This worker has been shanked by its supervisor
-    %% More than likely the supervisor has crashed/restarted and we
-    %% cannot continue processing the job since there are no more workers
-    error_logger:warning_msg("Worker ~p shutdown~n", [WorkerPid]),
-    {Item, StartTime, Active} = clear_worker(WorkerPid, S),
+  %% This worker has been shanked by its supervisor
+  %% More than likely the supervisor has crashed/restarted and we
+  %% cannot continue processing the job since there are no more workers
+  error_logger:warning_msg("Worker ~p shutdown~n", [WorkerPid]),
+  {Item, StartTime, Active} = clear_worker(WorkerPid, S),
 
-    Callback = S#state.callback,
-    spawn(Callback, worker_died, [Item, WorkerPid, StartTime, shutdown, S#state.job_state]),
+  Callback = S#state.callback,
+  spawn(Callback, worker_died, [Item, WorkerPid, StartTime, shutdown, S#state.job_state]),
 
-    wind_down(S#state{ active = Active, reason = stopped });
+  wind_down(S#state{ active = Active, reason = stopped });
 
 handle_info({'DOWN', _, process, WorkerPid, Info}, StateName, S) ->
-    error_logger:warning_msg("Worker ~p crashed: ~p~n", [WorkerPid, Info]),
-    {Item, StartTime, Active} = clear_worker(WorkerPid, S),
+  error_logger:warning_msg("Worker ~p crashed: ~p~n", [WorkerPid, Info]),
+  {Item, StartTime, Active} = clear_worker(WorkerPid, S),
 
-    Callback = S#state.callback,
-    spawn(Callback, worker_died, [Item, WorkerPid, StartTime, Info, S#state.job_state]),
+  Callback = S#state.callback,
+  spawn(Callback, worker_died, [Item, WorkerPid, StartTime, Info, S#state.job_state]),
 
-    %% Start a replacement worker
-    start_workers(1, Callback),
-    {next_state, StateName, S#state{ active = Active }};
+  %% Start a replacement worker
+  start_workers(1, Callback),
+  {next_state, StateName, S#state{ active = Active }};
 
 handle_info(_Event, StateName, State) ->
-    {next_state, StateName, State}.
+  {next_state, StateName, State}.
 
 handle_event(stop, _StateName, #state{callback = Callback} = S) ->
-    spawn(Callback, job_stopping, [S#state.job_state]),
-    error_logger:info_msg("Job runner ~p (~p) shutting down...~n", [Callback, self()]),
-    wind_down(S#state{ items = queue:new(), reason = stopped });
+  spawn(Callback, job_stopping, [S#state.job_state]),
+  error_logger:info_msg("Job runner ~p (~p) shutting down...~n", [Callback, self()]),
+  wind_down(S#state{ items = queue:new(), reason = stopped });
 
 handle_event(_Event, _StateName, State) ->
-    {stop, unsupportedOperation, State}.
+  {stop, unsupportedOperation, State}.
 
 handle_sync_event(_Event, _From, _StateName, State) ->
-    {stop, unsupportedOperation, State}.
+  {stop, unsupportedOperation, State}.
 
 terminate(_Reason, _StateName, _State) ->
-    ok.
+  ok.
 
 code_change(_OldVsn, StateName, State, _Extra) ->
-    {ok, StateName, State}.
+  {ok, StateName, State}.
 
 
 %%%===================================================================
